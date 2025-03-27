@@ -1,0 +1,12 @@
+# files
+TODO
+folder.*
+*.png~
+*.jpg~
+*.oso
+*.blend
+
+# directories
+/ARCH
+/*/images
+/resources
