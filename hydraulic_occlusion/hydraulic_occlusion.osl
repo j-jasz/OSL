@@ -35,8 +35,8 @@ void unit_disk (vector N,
 
 shader hydraulic_occlusion(
     int Samples = 4,
-    float Distance = 1.0,
-    float Angle = 1.0,
+    float Distance = 0.01,
+    float Angle = 0.99,
     float Spread = 0.0,
     vector Normal = vector(0, 0, 1),
     output color Hydraulic_Occlusion = 0
