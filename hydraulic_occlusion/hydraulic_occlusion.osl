@@ -48,23 +48,21 @@ shader hydraulic_occlusion(
     seed = fmod(seed, 1.0);
     Hydraulic_Occlusion = color(0, 0, 0);
 
-    if (dot(N, I) > 0) {
-        for (i = 0; i < Samples; i++) {
-            rand = hashnoise(P, seed + i * 0.1);
-            unit_disk(N, Normal, Angle, rand, x_dir, y_dir);
-            vector ray_dir = vector(x_dir, y_dir, 0);
-            float t = trace(P, ray_dir, "maxdist", Distance);
+    for (i = 0; i < Samples; i++) {
+        rand = hashnoise(P, seed + i * 0.1);
+        unit_disk(N, Normal, Angle, rand, x_dir, y_dir);
+        vector ray_dir = vector(x_dir, y_dir, 0);
+        float t = trace(P, ray_dir, "maxdist", Distance);
 
-            if (trace(P, ray_dir, "maxdist", Distance)) {
-                hit_count++;
-                mixage += clamp(t / Distance, 0.0, 1.0);
-            }
+        if (trace(P, ray_dir, "maxdist", Distance)) {
+            hit_count++;
+            mixage += clamp(t / Distance, 0.0, 1.0);
         }
-        mixage /= Samples;
-        color ColorHit = color(0.0, 0.0, 0.0);
-        color ColorIn = color(1.0, 1.0, 1.0);
-        Hydraulic_Occlusion = mix(ColorHit, ColorIn, mixage);
     }
+    mixage /= Samples;
+    color ColorHit = color(0.0, 0.0, 0.0);
+    color ColorIn = color(1.0, 1.0, 1.0);
+    Hydraulic_Occlusion = mix(ColorHit, ColorIn, mixage);
 }
 
 
