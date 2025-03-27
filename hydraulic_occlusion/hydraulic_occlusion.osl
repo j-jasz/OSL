@@ -42,8 +42,7 @@ shader hydraulic_occlusion(
 ) {
     int i;
     int hit_count = 0;
-    float x_dir, y_dir;
-    float rand;
+    float rand, x_dir, y_dir;
     float mixage = 0.0;
     float seed = hashnoise(P, 123456.0);
     seed = fmod(seed, 1.0);
