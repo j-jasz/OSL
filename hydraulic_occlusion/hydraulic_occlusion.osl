@@ -54,10 +54,12 @@ shader hydraulic_occlusion(
         unit_disk(N, Normal, Angle, rand, x_dir, y_dir);
         vector ray_dir = vector(x_dir, y_dir, Spread);
         float t = trace(P, ray_dir, "maxdist", Distance);
+        float hitdist = 0.0;
 
         if (t==1) {
             hit_count++;
-            mixage += clamp(t / Distance, 0.0, 1.0);
+            getmessage("trace", "hitdist", hitdist);
+            mixage += clamp(t / hitdist, 0.0, 1.0);
         }
     }
     mixage /= Samples;
