@@ -60,8 +60,7 @@ shader hydraulic_occlusion(
             rand = hashnoise(P, seed + i * 0.1);
             unit_disk(N, Normal, Angle, rand, x_dir, y_dir);
             ray_dir = vector(x_dir, y_dir, Spread);
-            float t = trace(P, ray_dir, "maxdist", Distance);
-            //t is always 1 inside the If block, we don't need it.
+            // t is always 1 inside the If block, we don't need it.
             if (trace(P, ray_dir, "maxdist", Distance)){
                 getmessage("trace", "hitdist", hitdist);
                 getmessage("trace", "N", hit_nor);
