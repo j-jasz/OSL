@@ -39,6 +39,7 @@ shader hydraulic_occlusion(
     float Angle = 0.99,
     float Spread = 0.0,
     vector Normal = vector(0, 0, 1),
+    float Raycut = 0.001,
     output color Hydraulic_Occlusion = 0,
     output float Hit_Distance = 0.0,
     output int Hit_Count = 0
@@ -64,8 +65,8 @@ shader hydraulic_occlusion(
             if (trace(P, ray_dir, "maxdist", Distance)){
                 getmessage("trace", "hitdist", hitdist);
                 getmessage("trace", "N", hit_nor);
-                // check if the face is hit on the front or back
-                if (dot(hit_nor, ray_dir) < 0) {
+                // check if the face is hit on the front or back and ignore rays shorter than
+                if (dot(hit_nor, ray_dir) < 0 && hitdist >= Raycut) {
                     // hitdist is always positive, no need to clamp at 0
                     mixage += min(1/hitdist, 1.0);
                     Hit_Count += 1;
