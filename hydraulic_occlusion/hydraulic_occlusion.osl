@@ -41,25 +41,33 @@ shader hydraulic_occlusion(
     vector Normal = vector(0, 0, 1),
     output color Hydraulic_Occlusion = 0
 ) {
+    // declare variables here, to save registers by reusing them in the Samples loop
     int i;
-    int hit_count = 0;
     float rand, x_dir, y_dir;
     float mixage = 0.0;
+    float hitdist = 0.0;
     float seed = hashnoise(P, 123456.0);
+    vector ray_dir, hit_nor, hit_pos;
     seed = fmod(seed, 1.0);
     Hydraulic_Occlusion = color(0, 0, 0);
 
-    for (i = 0; i < Samples; i++) {
-        rand = hashnoise(P, seed + i * 0.1);
-        unit_disk(N, Normal, Angle, rand, x_dir, y_dir);
-        vector ray_dir = vector(x_dir, y_dir, Spread);
-        float t = trace(P, ray_dir, "maxdist", Distance);
-        float hitdist = 0.0;
-
-        if (t==1) {
-            hit_count++;
-            getmessage("trace", "hitdist", hitdist);
-            mixage += clamp(t / hitdist, 0.0, 1.0);
+    // ignore shading points on the backface
+    if (!backfacing()) {
+        for (i = 0; i < Samples; i++) {
+            rand = hashnoise(P, seed + i * 0.1);
+            unit_disk(N, Normal, Angle, rand, x_dir, y_dir);
+            ray_dir = vector(x_dir, y_dir, Spread);
+            float t = trace(P, ray_dir, "maxdist", Distance);
+            //t is always 1 inside the If block, we don't need it.
+            if (trace(P, ray_dir, "maxdist", Distance)){
+                getmessage("trace", "hitdist", hitdist);
+                getmessage("trace", "N", hit_nor);
+                // check if the face is hit on the front or back
+                if (dot(hit_nor, ray_dir) < 0) {
+                    // hitdist is always positive, no need to clamp at 0
+                    mixage += min(1/hitdist, 1.0);
+                }
+            }
         }
     }
     mixage /= Samples;
