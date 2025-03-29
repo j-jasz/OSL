@@ -42,27 +42,25 @@ shader hydraulic_occlusion(
     float Ray_Tilt = 0.0,
     vector Normal = vector(0, 0, 1),
     output color Hydraulic_Occlusion = 0,
-    output float Hit_Distance = 0.0,
-    output int Hit_Count = 0
+    output float Distance_per_Sample = 0.0
 ) {
     // declare variables here, to save registers by reusing them in the Samples loop
     int i;
+    float hit_accum = 0.0;
+    float hitdist = 0.0;
     float rand, x_dir, y_dir, z_dir;
     float mixage = 0.0;
-    float hitdist = 0.0;
+    float ray_tilt = Ray_Tilt*-1;
     float seed = hashnoise(P, 123456.0);
-    float raytilt = Ray_Tilt*-1;
     vector ray_dir, hit_nor, hit_pos;
     seed = fmod(seed, 1.0);
-    Hydraulic_Occlusion = color(0, 0, 0);
-    Hit_Distance = 0.0;
 
     // ignore shading points on the backface
     if (!backfacing()) {
         for (i = 0; i < Samples; i++) {
             rand = hashnoise(P, seed + i * 0.1);
             unit_disk(N, Normal, Ray_Angle, rand, x_dir, y_dir);
-            z_dir = raytilt + (rand * Ray_Spread - (Ray_Spread / 2.0));
+            z_dir = ray_tilt + (rand * Ray_Spread - (Ray_Spread / 2.0));
             ray_dir = vector(x_dir, y_dir, z_dir);
             // t is always 1 inside the If block, we don't need it.
             if (trace(P, ray_dir, "maxdist", Max_Distance)){
@@ -71,8 +69,8 @@ shader hydraulic_occlusion(
                 // check if the face is hit on the front or back and ignore rays shorter than
                 if (dot(hit_nor, ray_dir) < 0 && hitdist >= Min_Distance) {
                     // hitdist is always positive, no need to clamp at 0
-                    mixage += min(1/hitdist, 1.0);
-                    Hit_Count += 1;
+                    hit_accum += hitdist;
+                    mixage += min(1/hit_accum, 1.0);
                 }
             }
         }
@@ -81,7 +79,7 @@ shader hydraulic_occlusion(
     color ColorHit = color(0.0, 0.0, 0.0);
     color ColorIn = color(1.0, 1.0, 1.0);
     Hydraulic_Occlusion = mix(ColorHit, ColorIn, mixage);
-    Hit_Distance = hitdist; // Note: This will only store the last hit distance
+    Distance_per_Sample = hit_accum / Samples;
 }
 
 
