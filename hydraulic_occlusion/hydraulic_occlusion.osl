@@ -43,24 +43,28 @@ void unit_sphere (vector N,
 
 shader hydraulic_occlusion(
     int Samples = 4,
-    float Max_Distance = 0.01,
+    float Max_Distance = 1.0,
     float Min_Distance = 0.001,
-    float Ray_Angle = 0.99,
+    float Ray_Angle = 1.0,
     float Ray_Spread = 0.0,
     float Ray_Tilt = 0.0,
+    float Hit_Void_Thold = 10.0,
     vector Normal = vector(0, 0, 1),
     output color Hydraulic_Occlusion = 0,
-    output float Distance_per_Sample = 0.0
+    output color Distance_per_Sample = 0.0,
+    output color Hit_Void = 0.0
 ) {
     // declare variables here, to save registers by reusing them in the Samples loop
     int i;
+    int hit_count = 0;
     float hit_accum = 0.0;
     float hitdist = 0.0;
+    float mix_ho = 0.0;
+    float mix_dist = 0.0;
+    float mix_void = 0.0;
+    float seed = fmod((hashnoise(P, 123456.0)), 1.0);
     float rand, x_dir, y_dir, z_dir;
-    float mixage = 0.0;
-    float seed = hashnoise(P, 123456.0);
-    vector ray_dir, hit_nor, hit_pos;
-    seed = fmod(seed, 1.0);
+    vector ray_dir, hit_nor;
 
     // ignore shading points on the backface
     if (!backfacing()) {
@@ -76,16 +80,20 @@ shader hydraulic_occlusion(
                 if (dot(hit_nor, ray_dir) < 0 && hitdist >= Min_Distance) {
                     // hitdist is always positive, no need to clamp at 0
                     hit_accum += hitdist;
-                    mixage += min(1/hit_accum, 1.0);
+                    hit_count += 1;
+                    mix_ho += min(1/hit_accum, 1.0);
                 }
             }
         }
     }
-    mixage /= Samples;
+    mix_ho /= Samples;
+    mix_dist = hit_accum / Samples;
+    mix_void = hit_count > Hit_Void_Thold;
     color ColorHit = color(0.0, 0.0, 0.0);
     color ColorIn = color(1.0, 1.0, 1.0);
-    Hydraulic_Occlusion = mix(ColorHit, ColorIn, mixage);
-    Distance_per_Sample = hit_accum / Samples;
+    Hydraulic_Occlusion = mix(ColorHit, ColorIn, mix_ho);
+    Distance_per_Sample = mix(ColorHit, ColorIn, mix_dist);
+    Hit_Void = mix(ColorIn, ColorHit, mix_void);
 }
 
 
