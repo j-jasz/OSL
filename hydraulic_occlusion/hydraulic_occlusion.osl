@@ -17,20 +17,28 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-void unit_disk (vector N,
-                        vector Normal,
-                        float Ray_Angle,
-                        float rand,
-                        output float x_dir,
-                        output float y_dir
+void unit_sphere (vector N,
+                            vector Normal,
+                            float Ray_Angle,
+                            float Ray_Spread,
+                            float Ray_Tilt,
+                            float rand,
+                            output float x_dir,
+                            output float y_dir,
+                            output float z_dir
 ){
     vector Dir = N - dot(N, Normal) * Normal;
     Dir = normalize(Dir);
+    float ray_tilt = Ray_Tilt*-1 - 1;
     float max_angle = Ray_Angle * M_PI / 2;
+    float max_spread = Ray_Spread * M_PI / 2;
     float fin_angle = rand * max_angle * 2 - max_angle;
+    float fin_spread = rand * max_spread * 2 - max_spread;
     float theta = atan2(Dir[1], Dir[0]) + fin_angle;
+    float phi = acos(Dir[2]) * fin_spread;
     x_dir = cos(theta);
     y_dir = sin(theta);
+    z_dir = cos(phi) + ray_tilt;
 }
 
 shader hydraulic_occlusion(
@@ -50,7 +58,6 @@ shader hydraulic_occlusion(
     float hitdist = 0.0;
     float rand, x_dir, y_dir, z_dir;
     float mixage = 0.0;
-    float ray_tilt = Ray_Tilt*-1;
     float seed = hashnoise(P, 123456.0);
     vector ray_dir, hit_nor, hit_pos;
     seed = fmod(seed, 1.0);
@@ -59,8 +66,7 @@ shader hydraulic_occlusion(
     if (!backfacing()) {
         for (i = 0; i < Samples; i++) {
             rand = hashnoise(P, seed + i * 0.1);
-            unit_disk(N, Normal, Ray_Angle, rand, x_dir, y_dir);
-            z_dir = ray_tilt + (rand * Ray_Spread - (Ray_Spread / 2.0));
+            unit_sphere(N, Normal, Ray_Angle, Ray_Spread, Ray_Tilt, rand, x_dir, y_dir, z_dir);
             ray_dir = vector(x_dir, y_dir, z_dir);
             // t is always 1 inside the If block, we don't need it.
             if (trace(P, ray_dir, "maxdist", Max_Distance)){
