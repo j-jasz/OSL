@@ -1,0 +1,93 @@
+/*
+ * This file is part of Jakub Jaszewski' OSL repository.
+ * https://github.com/j-jasz/OSL
+ * Copyright (C) 2025 Jakub Jaszewski.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+void unit_sphere (
+                            vector N,
+                            vector Normal,
+                            float Ray_Angle,
+                            float Ray_Spread,
+                            float Ray_Tilt,
+                            float rand,
+                            output float x_dir,
+                            output float y_dir,
+                            output float z_dir
+){
+
+    vector Dir = -N - dot(-N, Normal) * Normal;
+    Dir = normalize(Dir);
+
+    float ray_tilt = Ray_Tilt -1;
+    float max_angle = Ray_Angle * M_PI / 2;
+    float max_spread = Ray_Spread * M_PI / 2;
+    float fin_angle = rand * max_angle * 2 - max_angle;
+    float fin_spread = rand * max_spread * 2 - max_spread;
+    float theta = atan2(Dir[1], Dir[0]) + fin_angle;
+    float phi = acos(Dir[2]) * fin_spread;
+    x_dir = cos(theta);
+    y_dir = sin(theta);
+    z_dir = cos(phi) + ray_tilt;
+}
+
+shader BackfaceHit(
+    int Samples = 4,
+
+    float Max_Distance = 1.0,
+    float Min_Distance = 0.001,
+    float Ray_Angle = 1.0,
+    float Ray_Spread = 0.0,
+    float Ray_Tilt = 0.0,
+
+    vector Normal = vector(0, 0, 1),
+    output color Edge_Occlusion = 0,
+) {
+    int i;
+    int hit_count = 0;
+    float hit_accum = 0.0;
+    float hitdist = 0.0;
+    float mix_eo = 0.0;
+    float seed = fmod((hashnoise(P, 123456.0)), 1.0);
+    float rand, x_dir, y_dir, z_dir;
+    vector back_norm = -N; // Flip normals
+    vector ray_dir, hit_nor;
+
+    if (!backfacing()) {
+        for (i = 0; i < Samples; i++) {
+            rand = hashnoise(P, seed + i * 0.1);
+            unit_sphere(N, Normal, Ray_Angle, Ray_Spread, Ray_Tilt, rand, x_dir, y_dir, z_dir);
+            ray_dir = vector(x_dir, y_dir, z_dir);
+
+            if (trace(P, ray_dir, "maxdist", Max_Distance)) {
+                getmessage("trace", "N", hit_nor);
+                getmessage("trace", "hitdist", hitdist);
+                // Check if the hit face is a backface
+                // combine those two
+                //~ if (dot(back_norm, hit_nor) < 0) && hitdist >= Min_Distance) {
+                if (dot(back_norm, ray_dir) > 0 && hitdist >= Min_Distance) {
+                    hit_accum += hitdist;
+                    hit_count += 1;
+                    mix_eo += min(1/hit_accum, 1.0);
+                }
+            }
+        }
+    }
+    mix_eo /= Samples;
+    color ColorHit = color(0.0, 0.0, 0.0);
+    color ColorIn = color(1.0, 1.0, 1.0);
+    Edge_Occlusion = mix(ColorHit, ColorIn, mix_eo);
+}
